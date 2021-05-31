@@ -3,8 +3,8 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const mongoose = require('mongoose');
-
 const server = express();
+server.use(express.json());
 server.use(cors());
 
 const PORT = process.env.PORT;
@@ -93,7 +93,11 @@ function userCollectionSeed() {
     mohammed.save();
 }
 //userCollectionSeed()
+server.delete('/deleteBook/:index', deleteBooksFunc);
 server.get('/books' , bookFunction);
+server.post('/addBooks', addBooksFunc);
+
+
 
 function bookFunction (req ,res){
     let emailUser=req.query.email
@@ -103,15 +107,51 @@ function bookFunction (req ,res){
             console.log('did not work')
         } else {
             
-            console.log(userData[0])
-            console.log(userData[0].books)
+           // console.log(userData[0])
+            //console.log(userData[0].books)
             res.send(userData[0].books)
         }
     })
 
 }
+function addBooksFunc(req, res) {
+    console.log(req.body);
+    const { name, description, image_url, email } = req.body;
+    console.log(name);
+
+    myOwnerModel.find({ email: email }, (err, userData) => {
+        if (err) {
+            res.send('did not got email')
+        } else {
+            userData[0].books.push({
+                name: name,
+                description: description,
+                image_url: image_url
+            })
+           userData[0].save();
+            res.send(userData[0].books)
+        }
+    })
+}
+//console.log(books);
+
+function deleteBooksFunc(req, res) {
+    const { email } = req.query;
+    const index = Number(req.params.index)
+
+    myOwnerModel.find({ email: email }, (err, userData) =>{
+        const bookArray = userData[0].books.filter((book,idx)=>{
+            if(idx !== index){
+                return book;
+            }
+        })
+        userData[0].books=bookArray;
+        userData[0].save();
+        res.send(userData[0].books);
+    })
+}
 
 
     server.listen(PORT, () => {
-        console.log(`Listening on PORT ${PORT}`)
+        console.log(`Listening on this PORT ${PORT}`)
     })

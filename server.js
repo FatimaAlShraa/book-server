@@ -9,7 +9,7 @@ server.use(cors());
 
 const PORT = process.env.PORT;
 
-mongoose.connect('mongodb://localhost:27017/novel',
+mongoose.connect('mongodb://localhost:27017/books',
 { useNewUrlParser: true, useUnifiedTopology: true });
 
 
@@ -93,23 +93,25 @@ function userCollectionSeed() {
     mohammed.save();
 }
 //userCollectionSeed()
-server.delete('/deleteBook/:index', deleteBooksFunc);
 server.get('/books' , bookFunction);
 server.post('/addBooks', addBooksFunc);
+//server.put('/updateBook', updateFunc);
+server.delete('/deleteBook/:index', deleteBooksFunc);
+server.put('/updateBook/:index', updateBookhandler)
 
 
-
+//console.log(userData)
 function bookFunction (req ,res){
     let emailUser=req.query.email
-
-    myOwnerModel.find({email:emailUser},function(err,userData){
+    
+    myOwnerModel.findOne({email:emailUser},function(err,userData){
         if(err) {
             console.log('did not work')
         } else {
             
            // console.log(userData[0])
             //console.log(userData[0].books)
-            res.send(userData[0].books)
+            res.send(userData.books)
         }
     })
 
@@ -119,39 +121,58 @@ function addBooksFunc(req, res) {
     const { name, description, image_url, email } = req.body;
     console.log(name);
 
-    myOwnerModel.find({ email: email }, (err, userData) => {
+    myOwnerModel.findOne({ email: email }, (err, userData) => {
         if (err) {
             res.send('did not got email')
         } else {
-            userData[0].books.push({
+            userData.books.push({
                 name: name,
                 description: description,
                 image_url: image_url
             })
-           userData[0].save();
-            res.send(userData[0].books)
+           userData.save();
+            res.send(userData.books)
+            console.log(userData.books);
         }
     })
 }
-//console.log(books);
 
 function deleteBooksFunc(req, res) {
-    const { email } = req.query;
+    const { email } = req.body;
+    console.log(req.body)
     const index = Number(req.params.index)
 
-    myOwnerModel.find({ email: email }, (err, userData) =>{
-        const bookArray = userData[0].books.filter((book,idx)=>{
+    myOwnerModel.findOne({ email: email }, (err, userData) =>{
+        console.log(userData)
+        const bookArray = userData.books.filter((book,idx)=>{
             if(idx !== index){
                 return book;
             }
         })
-        userData[0].books=bookArray;
-        userData[0].save();
-        res.send(userData[0].books);
+        userData.books=bookArray;
+        userData.save();
+        res.send(userData.books);
     })
 }
 
+function updateBookhandler(req, res) {
+    console.log(req.body);
+    console.log(req.params.index);
+    const { name, description, image_url, email } = req.body;
+    const index = Number(req.params.index);
 
+    myOwnerModel.findOne({ email: email }, (error, userData) => {
+        userData.books.splice(index, 1, {
+            name: name,
+            description: description,
+            image_url: image_url
+        })
+        userData.save();
+         console.log('h', userData);
+        res.send(userData.books)
+    })
+
+}
     server.listen(PORT, () => {
         console.log(`Listening on this PORT ${PORT}`)
     })
